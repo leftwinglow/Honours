@@ -155,8 +155,9 @@ cython_debug/
 # Backups
 ZZZ_Backup/
 
-# HuggingFace Models
+# Models
 Hugging Face Models/
+PyTorch_Models/
 
 # Data - May be copywritten, should be uploaded at once another time
 Raw_Data
