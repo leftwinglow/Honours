@@ -21,10 +21,9 @@ sklearn_classifiers = Union[
 
 
 class Fingerprint_Comparator(ABC):
-    def __init__(self, smiles, labels) -> None:
+    def __init__(self, smiles) -> None:
         super().__init__()
         self.smiles = smiles
-        self.labels = labels
 
     @abstractmethod
     def regular_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
@@ -49,8 +48,9 @@ class Fingerprint_Comparator_SKlearn(Fingerprint_Comparator):
     scoring (str): An SKlearn classifier scoring method - https://scikit-learn.org/stable/modules/model_evaluation.html
     """
     def __init__(self, smiles: pd.Series, labels: pd.Series, sklearn_classifier: sklearn_classifiers, scoring: str) -> None:
-        super().__init__(smiles, labels)
+        super().__init__(smiles)
         self.sklearn_model = sklearn_classifier
+        self.labels = labels
         self.scoring = scoring
 
     def regular_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
@@ -75,16 +75,18 @@ class Fingerprint_Comparator_SKlearn(Fingerprint_Comparator):
 
 
 class Fingerprint_Comparator_Pytorch(Fingerprint_Comparator):
-    """Data input for fingerprint comparison using scikit-learn classification models
+    """Data input for fingerprint comparison using a pretrained PyTorch model
 
     Parameters
     ----------
-    smiles (pd.Series): The SMILES strings to be converted into fingerprints to act as the training set
+    smiles (pd.Series): The SMILES strings to be converted into fingerprints test the model on
     
     labels (pd.Series): Binary labels representing the DILI+ or DILI- nature of the SMILES strings
+    
+    pytorch_model (_type_): _description_
     """
-    def __init__(self, smiles: pd.Series | str, labels: pd.Series, pytorch_model) -> None:
-        super().__init__(smiles, labels)
+    def __init__(self, smiles: pd.Series | str, pytorch_model) -> None:
+        super().__init__(smiles)
         self.pytorch_model = pytorch_model
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
