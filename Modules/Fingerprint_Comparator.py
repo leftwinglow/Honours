@@ -26,16 +26,20 @@ class Fingerprint_Comparator(ABC):
         self.smiles = smiles
 
     @abstractmethod
-    def regular_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
+    def regular_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
         pass
 
     @abstractmethod
-    def huggingface_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
+    def huggingface_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
         pass
 
 
-class Fingerprint_Comparator_SKlearn(Fingerprint_Comparator):
+class SKlearn(Fingerprint_Comparator):
     """Data input for fingerprint comparison using scikit-learn classification models
+    
+    Key Question: What fingerprinting methodologies trains the most accurate scikit learn model?
+
+    Perform cross-validation on a given sklearn model to determine which fingerprint method produces the greatest score
 
     Parameters
     ----------
@@ -53,7 +57,7 @@ class Fingerprint_Comparator_SKlearn(Fingerprint_Comparator):
         self.labels = labels
         self.scoring = scoring
 
-    def regular_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
+    def regular_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
         scores = []
         for fingerprint in tqdm(fingerprints):
             fp_transformer = trans.MoleculeTransformer(featurizer=fingerprint)
@@ -63,7 +67,7 @@ class Fingerprint_Comparator_SKlearn(Fingerprint_Comparator):
             scores.append(score)
         return pd.DataFrame({"Fingerprint": fingerprints, f"Score ({self.scoring})": scores})
 
-    def huggingface_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
+    def huggingface_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
         scores = []
         for fingerprint in tqdm(fingerprints):
             fp_transformer = pretrained.PretrainedHFTransformer(kind=fingerprint)
@@ -74,8 +78,10 @@ class Fingerprint_Comparator_SKlearn(Fingerprint_Comparator):
         return pd.DataFrame({"HuggingFace Fingerprint": fingerprints, f"Score ({self.scoring})": scores})
 
 
-class Fingerprint_Comparator_Pytorch(Fingerprint_Comparator):
+class PyTorch_Pretrained(Fingerprint_Comparator):
     """Data input for fingerprint comparison using a pretrained PyTorch model
+
+    Key Question: What fingerprinting methodologies yields the best accuracy on a pretrained PyTorch model?
 
     Parameters
     ----------
@@ -85,38 +91,40 @@ class Fingerprint_Comparator_Pytorch(Fingerprint_Comparator):
     
     pytorch_model (_type_): _description_
     """
-    def __init__(self, smiles: pd.Series | str, pytorch_model) -> None:
+    def __init__(self, smiles: pd.Series | list[str], pretrained_model: torch.nn.Module) -> None:
         super().__init__(smiles)
-        self.pytorch_model = pytorch_model
+        self.pretrained_model = pretrained_model
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    def regular_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
-        scores = []
-        for fingerprint in tqdm(fingerprints):
-            fp_transformer = trans.MoleculeTransformer(featurizer=fingerprint)
-
-            fingerprint_features = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32)
-
-            fingerprint_features = fingerprint_features.to(self.device)
-            print(fingerprint_features.shape)
+    def regular_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
+        score_list = []
+        
+        for fp_type in tqdm(fingerprints):
+            fp_transformer = trans.MoleculeTransformer(featurizer=fp_type)
+            fingerprint_features: torch.Tensor = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32).to(self.device)
 
             with torch.no_grad():
-                self.pytorch_model.eval()
-                output = self.pytorch_model(fingerprint_features)
-                self.prediction = output.item()
+                new_row = []
+                self.pretrained_model.eval()
+                for fp in fingerprint_features:
+                    output = self.pretrained_model(fp)
+                    self.prediction = output.item()
+                    new_row.append(self.prediction)
+                score_list.append(new_row)
 
-        return pd.DataFrame({"Fingerprint": fingerprints, f"Prediction ({self.pytorch_model})": self.prediction})
+        df = pd.DataFrame(score_list, columns=self.smiles)
+        df.insert(0, "Fingerprint type", fingerprints) 
+        return df
 
-    def huggingface_fingerprint_comparator(self, fingerprints: list[str]) -> pd.DataFrame:
+    def huggingface_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
         scores = []
         for fingerprint in tqdm(fingerprints):
             fp_transformer = pretrained.PretrainedHFTransformer(kind=fingerprint)
-            
-            fingerprint_features = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32)
+            fingerprint_features: torch.Tensor = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32).to(self.device)
 
             with torch.no_grad():
-                self.pytorch_model.eval()
-                output = self.pytorch_model(fingerprint_features)
+                self.pretrained_model.eval()
+                output = self.pretrained_model(fingerprint_features)
                 self.prediction = output.item()
                 
-        return pd.DataFrame({"Fingerprint": fingerprints, f"Prediction ({self.pytorch_model})": self.prediction})
+        return pd.DataFrame({"Fingerprint": fingerprints, f"Prediction ({self.pretrained_model})": self.prediction})

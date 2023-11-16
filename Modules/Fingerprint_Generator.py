@@ -30,7 +30,7 @@ class Smiles_To_Fingerprint:
 
     T = TypeVar("T")
 
-    def __init__(self, smiles: str | list[str], fp_type: str) -> None:
+    def __init__(self, smiles: list[str], fp_type: str) -> None:
         fp_transformer = trans.MoleculeTransformer(featurizer=fp_type)
         self.fingerprint = fp_transformer.transform(smiles)
 
