@@ -5,7 +5,9 @@ from molfeat import trans
 from typing import TypeVar
 
 
-def generate_fp_column(dataframe: pd.DataFrame, dataframe_smiles_col, fp_type: str) -> pd.DataFrame:
+def generate_fp_column(
+    dataframe: pd.DataFrame, dataframe_smiles_col, fp_type: str
+) -> pd.DataFrame:
     """Adds a column of SMILES strings with Molfeat fingerprints
 
     Args:
@@ -33,18 +35,6 @@ class Smiles_To_Fingerprint:
     def __init__(self, smiles: list[str], fp_type: str) -> None:
         fp_transformer = trans.MoleculeTransformer(featurizer=fp_type)
         self.fingerprint = fp_transformer.transform(smiles)
-
-    # def astype(self, d_type: str):
-    #     match d_type:
-    #         case  'list':
-    #             return self.fingerprint
-    #         case 'numpy_array':
-    #             self.fingerprint = np.ndarray(self.fingerprint)
-    #         case 'torch_tensor':
-    #             self.fingerprint = torch.Tensor(self.fingerprint)
-    #         case _:
-    #             raise TypeError(f"Unsupported type: '{type}'")
-    #     return self.fingerprint
 
     def astype(self, return_type: type[T]) -> T:
         match return_type:
