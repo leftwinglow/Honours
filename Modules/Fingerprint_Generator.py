@@ -1,13 +1,12 @@
 import pandas as pd
 import numpy as np
 import torch
-from molfeat import trans
+from molfeat import trans, store
+from molfeat.trans import pretrained
 from typing import TypeVar
 
 
-def generate_fp_column(
-    dataframe: pd.DataFrame, dataframe_smiles_col, fp_type: str
-) -> pd.DataFrame:
+def generate_fp_column(dataframe: pd.DataFrame, dataframe_smiles_col: pd.Series, fp_type: str) -> pd.DataFrame:
     """Adds a column of SMILES strings with Molfeat fingerprints
 
     Args:
@@ -21,7 +20,6 @@ def generate_fp_column(
     fp_transformer = trans.MoleculeTransformer(featurizer=f"{fp_type}")
     dataframe[f"{fp_type}"] = fp_transformer.transform(dataframe_smiles_col.values)
     return dataframe
-
 
 class Smiles_To_Fingerprint:
     """Convert a SMILES string to a fingerprint of a given datatype

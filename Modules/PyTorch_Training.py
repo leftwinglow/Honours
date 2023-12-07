@@ -5,19 +5,17 @@ import torchmetrics
 from Modules import My_Pytorch_Utilities
 from sklearn.model_selection import StratifiedKFold
 
-class SMILES_Features_Dataset(torch.utils.data.Dataset):
-    def __init__(self, features, labels) -> None:
-        super().__init__()
-        self.features = features
-        self.labels = labels
-        
-    def __len__(self):
-        return len (self.labels)
-    
-    def __getitem__(self, idx):
-        features = self.features[idx]
-        labels = self.labels[idx]
-        return torch.tensor([features], dtype=torch.float32), torch.tensor([labels], dtype=torch.float32)
+class DILI_Models:  
+    class DILI_Predictor_Sequential(nn.Sequential):
+        def __init__(self, input_size, hidden_size, output_size) -> None:
+            super().__init__(
+                nn.Linear(input_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, output_size),
+                nn.Sigmoid()
+            )
 
 class Model_Train_Test:
     def __init__(self, model: torch.nn.Module, metric_collection: torchmetrics.MetricCollection, loss_fn: torch.nn.Module = nn.BCELoss(), optimizer=torch.optim.Adam, lr=1e-4) -> None:
@@ -105,7 +103,6 @@ class Model_Train_Test:
 
         score_df = pd.concat(score_df)  # Concatenate the dfs - More performant
         score_df.insert(0, "Fold", range(k_folds))
-        score_df.set_index("Fold", inplace=True)
 
         return loss, score_df
 

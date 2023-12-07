@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from pandas.core.api import DataFrame as DataFrame
 from tqdm import tqdm
 import numpy as np
 import pandas as pd
@@ -8,8 +7,12 @@ from molfeat.trans import pretrained
 from sklearn import model_selection, ensemble
 import torch
 from typing import Union
-from Modules import PyTorch_Training
+from Modules import PyTorch_Training, My_Pytorch_Utilities
 import torchmetrics
+
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning, message="is_sparse is deprecated")
 
 
 sklearn_classifiers = Union[
@@ -172,28 +175,42 @@ class PyTorch_Pretrained(Fingerprint_Comparator):
 class Pytorch_Train(Fingerprint_Comparator):
     def __init__(self, smiles: pd.Series | list[str], labels: pd.Series | list[str], model: torch.nn.Module | torch.nn.Sequential, model_input_len: int, metric_collection: torchmetrics.MetricCollection) -> None:
         super().__init__(smiles, labels)
+        self.labels = pd.Series(labels)
         self.model = model        
         self.model_input_len = model_input_len
-        
+
         self.metric_collection = metric_collection
         
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
         
-    def regular_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
-        for fingerprint in tqdm(fingerprints):
+    def regular_fingerprint(self, fingerprints: list[str] | pd.Series, pad: bool = False, loss_fn: torch.nn.Module = torch.nn.BCELoss(), optimizer = torch.optim.Adam, k_folds: int = 10, epochs: int = 10, batch_size: int = 256, DP: int = 3) -> tuple[pd.DataFrame, pd.MultiIndex]:
+        score_df_list = []
+        
+        for fingerprint in fingerprints:
+            print(f"{fingerprint:-^127}")
+            
             fp_transformer = trans.MoleculeTransformer(fingerprint)
-            # fingerprint_features = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32).to(self.device)
+            
             fingerprint_features = fp_transformer.transform(self.smiles)
             
-            PyTorch_Dataset = PyTorch_Training.SMILES_Features_Dataset(fingerprint_features, self.labels)
+            PyTorch_Dataset = My_Pytorch_Utilities.SMILES_Features_Dataset(pd.Series(fingerprint_features), self.labels, pad=pad, pad_len=self.model_input_len)
             
-            # dim_padding = torch.tensor(self.model_input_len) - fingerprint_features.size
+            loss, score_df = PyTorch_Training.Model_Train_Test(self.model, self.metric_collection, loss_fn, optimizer).train_model_crossval(PyTorch_Dataset, k_folds, epochs, batch_size, DP)
+            # print(score_df)
+            means = score_df.iloc[:,1:].mean()          
             
-            # fingerprint_features = torch.nn.functional.pad(fingerprint_features, (0, dim_padding))
+            score_df.insert(0, "Fingerprint", fingerprint)  # Insert fingerprint type as first column
+            # score_df.loc[len(score_df)-1] = means  # Calculate means for each fingerprint type
+            # score_df = score_df.fillna({'Fingerprint': f'{fingerprint}_mean', 'Fold': 'NaN'})  # Add row title for means row
             
-            loss, score_df = PyTorch_Training.Model_Train_Test(self.model, self.metric_collection).train_model_crossval(PyTorch_Dataset)
+            score_df_list.append(score_df)  # Add the new score df to the list of score_dfs
+            
+        score_df: pd.DataFrame = pd.concat(score_df_list)
+        score_df.set_index("Fingerprint")
+        score_df_multiindex = pd.MultiIndex.from_frame(score_df)
+        
+        return score_df, score_df_multiindex
+            
     
-        return score_df
-    
-    def huggingface_fingerprint(self, fingerprints: list[str]) -> DataFrame:
+    def huggingface_fingerprint(self, fingerprints: list[str]) -> pd.DataFrame:
         return super().huggingface_fingerprint(fingerprints)

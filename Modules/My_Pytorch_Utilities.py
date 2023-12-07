@@ -1,6 +1,31 @@
 from datetime import datetime
 import torch
+import torch.utils.data
 import os
+
+class SMILES_Features_Dataset(torch.utils.data.Dataset):
+    def __init__(self, features, labels, pad: bool = False, pad_len: int = 2048) -> None:
+        super().__init__()
+        self.features = features
+        self.labels = labels
+        
+        self.pad = pad
+        self.pad_len = pad_len
+        
+    def __len__(self):
+        return len (self.labels)
+    
+    def __getitem__(self, idx):
+        labels = self.labels.iloc[idx]
+        
+        if self.pad is True:
+            dim_padding = self.pad_len - (self.features.iloc[idx].size)
+            features = torch.nn.functional.pad(torch.tensor(self.features.iloc[idx], dtype=torch.float32), (0, dim_padding))
+            return torch.stack([features]), torch.tensor([labels], dtype=torch.float32)
+        
+        else:
+            features = self.features.iloc[idx]
+            return torch.tensor([features], dtype=torch.float32), torch.tensor([labels], dtype=torch.float32)
 
 class Training_Utilities():
     def __init__(self):
@@ -14,7 +39,8 @@ class Training_Utilities():
                     pass
                 else:
                     print(f"Reset trainable parameters of layer = {layer}")
-
+    
+    def early_stopper
           
 def metics_tensor_dict_to_floats(metrics):
         return {key: value.to(device='cpu', non_blocking=True).item() if hasattr(value, 'to') 
