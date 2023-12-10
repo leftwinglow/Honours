@@ -6,6 +6,36 @@ from molfeat.trans import pretrained
 from typing import TypeVar
 
 
+class Fingerprint_Types:
+    def regular_fingerprints(self, abridged_set: bool = False, verbose: bool = False) -> list[str]:
+        regular_fingerprints = [
+            "maccs",
+            # "mordred",
+            "ecfp",
+            "ecfp-count",
+            "avalon",
+            "fcfp",
+            "secfp",
+            "topological",
+            "atompair",
+            "rdkit",
+            "pattern",
+            "layered",
+        ]
+
+        if abridged_set is False:
+            pass
+        if abridged_set is True:
+            regular_fingerprints = regular_fingerprints[:3]
+            
+        if verbose is True:
+            print(f"Regular fingerprints: {regular_fingerprints}")
+        else:
+            pass
+
+        return regular_fingerprints
+
+
 def generate_fp_column(dataframe: pd.DataFrame, dataframe_smiles_col: pd.Series, fp_type: str) -> pd.DataFrame:
     """Adds a column of SMILES strings with Molfeat fingerprints
 
@@ -20,6 +50,7 @@ def generate_fp_column(dataframe: pd.DataFrame, dataframe_smiles_col: pd.Series,
     fp_transformer = trans.MoleculeTransformer(featurizer=f"{fp_type}")
     dataframe[f"{fp_type}"] = fp_transformer.transform(dataframe_smiles_col.values)
     return dataframe
+
 
 class Smiles_To_Fingerprint:
     """Convert a SMILES string to a fingerprint of a given datatype
