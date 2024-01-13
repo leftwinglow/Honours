@@ -8,8 +8,8 @@ import camelot as cm
 import pandas as pd
 
 
-def tbl_convert(file_name):
-    tables = cm.read_pdf(f'Raw_Data/{file_name}.pdf', pages='1-2')  # Need 24 pages for this PDF
+def tbl_convert(file_name: str, pages: str):
+    tables = cm.read_pdf(f'Raw_Data/{file_name}.pdf', pages=pages)  # Need 24 pages for this PDF
 
     # Pandas concatenate Camelot TableList object 'tables' as a Pandas df
     tables_df = pd.concat([
@@ -42,4 +42,4 @@ def tbl_convert(file_name):
     tables_df.to_csv(f'Intermediate_Data/{file_name}.csv', encoding='utf_8')
 
 
-tbl_convert('Onakpoya_Drugs')
+tbl_convert('Onakpoya_Drugs', "1-2")

@@ -47,9 +47,7 @@ class SKlearn(Fingerprint_Comparator):
     scoring (str): An SKlearn classifier scoring method - https://scikit-learn.org/stable/modules/model_evaluation.html
     """
 
-    def __init__(
-        self, smiles: pd.Series | list[str], labels: pd.Series | list[str], sklearn_classifier, scoring: str = "roc_auc"
-    ) -> None:
+    def __init__(self, smiles: pd.Series | list[str], labels: pd.Series | list[str], sklearn_classifier, scoring: str = "roc_auc") -> None:
         super().__init__(smiles, labels)
         self.sklearn_classifier = sklearn_classifier
         self.scoring = scoring
@@ -127,15 +125,11 @@ class PyTorch_Pretrained(Fingerprint_Comparator):
         score_list = []
         for fingerprint in tqdm(fingerprints):
             fp_transformer = trans.MoleculeTransformer(fingerprint)
-            fingerprint_features: torch.Tensor = torch.tensor(
-                fp_transformer.transform(self.smiles), dtype=torch.float32
-            ).to(
+            fingerprint_features: torch.Tensor = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32).to(
                 self.device
             )  # Transform SMILES > fingerprints
 
-            dim_padding = torch.tensor(model_input_len) - fingerprint_features.size(
-                1
-            )  # Pad smaller fingerprints up to input size of model
+            dim_padding = torch.tensor(model_input_len) - fingerprint_features.size(1)  # Pad smaller fingerprints up to input size of model
 
             fingerprint_features = torch.nn.functional.pad(fingerprint_features, (0, dim_padding))
 
@@ -158,9 +152,7 @@ class PyTorch_Pretrained(Fingerprint_Comparator):
         score_list = []
         for fingerprint in tqdm(fingerprints):
             fp_transformer = pretrained.PretrainedHFTransformer(fingerprint)
-            fingerprint_features: torch.Tensor = torch.tensor(
-                fp_transformer.transform(self.smiles), dtype=torch.float32
-            ).to(self.device)
+            fingerprint_features: torch.Tensor = torch.tensor(fp_transformer.transform(self.smiles), dtype=torch.float32).to(self.device)
 
             dim_padding = torch.tensor(2048) - fingerprint_features.size(1)
 
@@ -215,10 +207,10 @@ class Pytorch_Train(Fingerprint_Comparator):
             fingerprint_features = fp_transformer.transform(self.smiles)
 
             if pad is False:  # Default behaviour - Train a new model for each FP type
-                fp_len = len(fingerprint_features[0])
+                fp_len = len(fingerprint_features[0])  # Training model with no padding
                 self.model = PyTorch_Training.DILI_Models.DILI_Predictor_Sequential(fp_len, round(fp_len / 2)).to(
                     self.device
-                )
+                )  # Training model with no padding, hence input size = fp_len
                 PyTorch_Dataset = My_Pytorch_Utilities.SMILES_Features_Dataset(
                     pd.Series(fingerprint_features), self.labels, pad=False, pad_len=self.model_input_len
                 )
@@ -228,9 +220,9 @@ class Pytorch_Train(Fingerprint_Comparator):
                     pd.Series(fingerprint_features), self.labels, pad=True, pad_len=self.model_input_len
                 )
 
-            loss, score_df = PyTorch_Training.Model_Train_Test(
-                self.model, self.metric_collection, loss_fn, optimizer
-            ).train_model_crossval(PyTorch_Dataset, k_folds, epochs, batch_size, DP)
+            loss, score_df = PyTorch_Training.Model_Train_Test(self.model, self.metric_collection, loss_fn, optimizer).train_model_crossval(
+                PyTorch_Dataset, k_folds, epochs, batch_size, DP
+            )
 
             score_df.insert(0, "Fingerprint", fingerprint)  # Insert fingerprint type as first column
             # score_df.loc[len(score_df)-1] = means  # Calculate means for each fingerprint type

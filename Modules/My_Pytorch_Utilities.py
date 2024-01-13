@@ -29,16 +29,6 @@ class SMILES_Features_Dataset(torch.utils.data.Dataset):
             features = self.features.iloc[idx]
             return torch.tensor([features], dtype=torch.float32), torch.tensor([labels], dtype=torch.float32)
 
-    def early_stopper(self, validation_loss, patience=1, min_delta=0):
-        if validation_loss < self.min_validation_loss:
-            self.min_validation_loss = validation_loss
-            self.counter = 0
-        elif validation_loss > (self.min_validation_loss + min_delta):
-            self.counter += 1
-            if self.counter >= patience:
-                return True
-        return False
-
 
 class Training_Utilities:
     def __init__(self):
