@@ -1,0 +1,30 @@
+import pandas as pd
+import datamol as dm
+import os
+
+transformed_dataframe = pd.read_csv("C:/Users/Luke/Documents/University/5th Year/Honours Python/Raw_Data/Hansen_Ames.csv")
+hf_graph_dataframe = pd.read_pickle("C:/Users/Luke/Documents/University/5th Year/Honours Python/Transformed_Data/Hansen_HF_Graph.pkl")
+
+
+def test_hf_graph_correct_atom_count() -> None:
+    """
+    Test function to check if the number of nodes in the graph matches the number of atoms in the molecule.
+
+    This function selects a random index from the `hf_graph_dataframe` and retrieves the corresponding SMILES string.
+    It then converts the SMILES string to a molecule object using `dm.to_mol` function.
+    Finally, it compares the number of nodes in the graph with the number of atoms in the molecule and asserts their equality.
+
+    Raises:
+        AssertionError: If the number of nodes in the graph does not match the number of atoms in the molecule.
+    """
+    import random
+
+    rand_idx = random.randint(0, len(hf_graph_dataframe) - 1)
+
+    smiles = transformed_dataframe.iloc[rand_idx, 0]
+    mol = dm.to_mol(smiles)
+
+    graph = hf_graph_dataframe.iloc[rand_idx]
+
+    assert graph.num_nodes == mol.GetNumAtoms()
+
