@@ -28,3 +28,21 @@ def test_hf_graph_correct_atom_count() -> None:
 
     assert graph.num_nodes == mol.GetNumAtoms()
 
+def test_hf_graph_y_is_list() -> None:
+    """
+    Test function to check if the `y` column in the `hf_graph_dataframe` is a list.
+
+    This function selects a random index from the `hf_graph_dataframe` and retrieves the corresponding `y` value.
+    It then checks if the `y` value is a list and asserts the result.
+
+    Raises:
+        AssertionError: If the `y` value is not a list.
+    """
+    import random
+
+    rand_idx = random.randint(0, len(hf_graph_dataframe) - 1)
+
+    y = hf_graph_dataframe.iloc[rand_idx, 3]
+
+    assert isinstance(y, list)
+
