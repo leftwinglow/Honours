@@ -7,7 +7,7 @@ from datasets import Dataset
 import os
 
 
-def to_transformed(raw_hansen_data: str | os.PathLike, save_csv: bool = False) -> pd.DataFrame:
+def to_transformed(raw_hansen_data: str | os.PathLike, save_pickle: bool = False) -> pd.DataFrame:
     hansen_raw = pd.read_csv(raw_hansen_data)
 
     hansen_raw = hansen_raw.drop(hansen_raw.columns[1], axis=1)
@@ -15,8 +15,12 @@ def to_transformed(raw_hansen_data: str | os.PathLike, save_csv: bool = False) -
     hansen_raw.smiles = hansen_raw.smiles.apply(dm.to_mol)
     hansen_transformed = hansen_raw
 
-    if save_csv is True:
-        hansen_transformed.to_csv("C:/Users/Luke/Documents/University/5th Year/Honours Python/Transformed_Data/Hansen_Ames.csv", index=False)
+    if save_pickle is True:
+        import pickle
+
+        filepath = "C:/Users/Luke/Documents/University/5th Year/Honours Python/Transformed_Data/Hansen_Ames_mol.pkl"
+        with open(filepath, "wb") as file:
+            pickle.dump(hansen_transformed, file)
 
     return hansen_transformed
 
@@ -91,7 +95,7 @@ def to_graphormer_format(hf_graph_dataset: pd.DataFrame | str | os.PathLike, sav
 
 
 if __name__ == "__main__":
-    hansen_transformed = to_transformed("C:/Users/Luke/Documents/University/5th Year/Honours Python/Raw_Data/Hansen_Ames.csv", False)
+    hansen_transformed = to_transformed("C:/Users/Luke/Documents/University/5th Year/Honours Python/Raw_Data/Hansen_Ames.csv", True)
     hansen_dgl_graph = hansen_to_graph(hansen_transformed)
     hansen_hf_graph = to_hf(hansen_dgl_graph)
     hansen_graphormer_graph = to_graphormer_format(hansen_hf_graph, True)

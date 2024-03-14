@@ -2,14 +2,13 @@ import torch
 from transformers import GraphormerForGraphClassification, GraphormerConfig, TrainingArguments, Trainer
 from transformers.models.graphormer.collating_graphormer import GraphormerDataCollator
 from Data_Handling import graphormer_df_creator
+from Metric_Utilities import compute_metrics
 
+# from Metric_Utilities import compute_metrics
 
-if torch.cuda.is_available():
-    device = torch.device("cuda")
-else:
-    device = torch.device("cpu")
+dataset_processed = graphormer_df_creator("graphormer_format", truncated=False)
 
-dataset_processed = graphormer_df_creator("graphormer_format")
+print(dataset_processed.num_rows)
 
 graphormer_config = GraphormerConfig(num_classes=2, num_atoms=50000, num_edges=9999)
 graphormer = GraphormerForGraphClassification(graphormer_config)
@@ -30,18 +29,16 @@ training_args = TrainingArguments(
     # disable_tqdm=True,
 )
 
+
 trainer = Trainer(
     model=graphormer,
     args=training_args,
     data_collator=GraphormerDataCollator(),
     train_dataset=dataset_processed["train"],
     eval_dataset=dataset_processed["test"],
+    compute_metrics=compute_metrics,
 )
 
 train_results = trainer.train()
 
 print(train_results)
-
-# graphormer_config = tr.GraphormerConfig(num_classes=2)
-
-# graphormer = tr.GraphormerForGraphClassification(config=graphormer_config)

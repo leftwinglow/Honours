@@ -1,14 +1,18 @@
 import dgl
 import numpy as np
 from typing import Literal
+from datasets import DatasetDict
 
-def graphormer_df_creator(format: Literal["graphormer_format", "hf_format", "test_dataset"]):
+
+def graphormer_df_creator(format: Literal["graphormer_format", "hf_format", "test_dataset"], truncated: bool = False, truncated_length: int = 50) -> DatasetDict:
     import platform
     from Data_Cleaning import to_graphormer_format
     from datasets import load_from_disk
 
     if platform.system() == "Linux":
         linux = True
+    else:
+        linux = False
 
     if format == "graphormer_format":
         if linux is True:
@@ -32,6 +36,9 @@ def graphormer_df_creator(format: Literal["graphormer_format", "hf_format", "tes
     if format != "test_dataset":
         # dataset_processed = dataset_processed.class_encode_column("y")
         dataset_processed = dataset_processed.train_test_split(test_size=0.2, seed=42)
+        if truncated is True:
+            for split in dataset_processed.keys():
+                dataset_processed[split] = dataset_processed[split].select(range(50))
 
     return dataset_processed
 
