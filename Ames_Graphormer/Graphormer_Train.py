@@ -16,8 +16,8 @@ graphormer = GraphormerForGraphClassification(graphormer_config)
 training_args = TrainingArguments(
     "graph-classification",
     logging_dir="graph-classification",
-    per_device_train_batch_size=2,
-    per_device_eval_batch_size=2,
+    per_device_train_batch_size=64,
+    per_device_eval_batch_size=64,
     auto_find_batch_size=True,  # batch size can be changed automatically to prevent OOMs
     gradient_accumulation_steps=10,
     dataloader_num_workers=4,  # 1,
